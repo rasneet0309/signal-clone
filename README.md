@@ -8,6 +8,27 @@ delivery/read receipts, and a UI closely modeled on Signal's actual design.
 > brief — this project focuses on replicating the messaging UX and
 > real-time architecture, not implementing the Signal Protocol.
 
+## Live Demo
+
+- **App:** https://signal-clone-seven.vercel.app
+- **API:** https://signal-clone-backend-8013.onrender.com
+- **Repo:** https://github.com/rasneet0309/signal-clone
+
+**Demo accounts** (password `password123`, OTP `0000` for all):
+`alice`, `bob`, `carol`, `dave`
+
+> **Note on first load:** the backend is hosted on Render's free tier, which
+> spins the server down after ~15 minutes of inactivity. The **first**
+> request after a period of idle time can take 20-50 seconds to respond
+> while it spins back up - this is expected free-tier behavior, not a bug.
+> Subsequent requests are fast.
+>
+> Because the free tier's disk is also wiped on restart, the backend
+> **automatically re-seeds the demo accounts and sample conversations** on
+> startup if the database is found empty (see `app/seed.py` + the startup
+> check in `app/main.py`) - so demo data is always available even after a
+> cold restart, without needing manual shell access.
+
 ---
 
 ## Tech Stack
@@ -160,6 +181,7 @@ to Carol." This table gives one row per (message, recipient) pair.
 | DELETE | `/conversations/{id}/members/{user_id}` | Remove a member (admin only) |
 | GET | `/messages/{conversation_id}` | Load message history for a chat |
 | POST | `/messages/{conversation_id}/read` | Mark all messages in a chat as read |
+| GET | `/messages/info/{message_id}` | Per-recipient delivery/read status with timestamps (sender only) - powers the "tap the checkmarks" message info panel |
 
 ### WebSocket: `/ws?token=<jwt>`
 Single persistent connection per logged-in user.
@@ -172,8 +194,17 @@ Single persistent connection per logged-in user.
 **Server → Client events:**
 - `{"type": "new_message", "message": {...}}`
 - `{"type": "typing", "conversation_id": 3, "user_id": 7, "is_typing": true}`
-- `{"type": "message_status", "message_id": 12, "status": "delivered"|"read", "user_id": 7}`
+- `{"type": "message_status", "message_id": 12, "status": "sent"|"delivered"|"read"}`
 - `{"type": "presence", "user_id": 7, "online": true|false}`
+- `{"type": "conversation_updated", "conversation_id": 3}` - sent when a group's
+  membership changes, so all affected tabs refresh without a manual reload
+
+**Group chat tick logic:** the status reported to a message's sender is an
+*aggregate* across all recipients (worst-case wins) - e.g. a group message
+only shows the blue "read" double-tick once **every** member has read it,
+not just one. Tap the checkmarks on your own message to see the exact
+per-person breakdown (sent/delivered/read + timestamp) via the message info
+panel - this mirrors how Signal/WhatsApp group read receipts actually work.
 
 ---
 
@@ -234,14 +265,29 @@ typing indicators, and read receipts live.
 - **Group "last seen"/online status** is shown per-member inside Group Info
   rather than as a single aggregate status, since a group doesn't have one
   online/offline state.
+- **Group membership changes post a real chat message** ("Alice added Carol
+  to the group") rather than a separate "system message" type, since the
+  schema doesn't need a new column for this - it's a normal message
+  authored by the admin who made the change, broadcast live to everyone
+  in the group (including the newly added/removed member, so their
+  sidebar updates without a manual refresh).
 
 ---
 
 ## Deployment
 
-- **Backend** → Render (Web Service, `uvicorn app.main:app --host 0.0.0.0 --port $PORT`)
-- **Frontend** → Vercel (auto-detects Next.js)
-- After deploying the backend, update the frontend's environment variables
-  (`NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_WS_URL`) to point at the deployed
-  backend URL, using `wss://` (not `ws://`) since the deployed backend will
-  be served over HTTPS.
+**Backend → Render (free tier Web Service)**
+- Root directory: `backend`
+- Build command: `pip install -r requirements.txt`
+- Start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+- `PYTHON_VERSION` environment variable set to `3.11.9` - Render's default
+  Python (3.14 at time of writing) is too new to have pre-built install
+  files for some dependencies (`pydantic-core`), which otherwise forces a
+  Rust source build that fails in Render's read-only build filesystem.
+
+**Frontend → Vercel**
+- Root directory: `frontend` (auto-detected as Next.js)
+- Environment variables:
+  - `NEXT_PUBLIC_API_URL` = the Render backend URL (`https://...onrender.com`)
+  - `NEXT_PUBLIC_WS_URL` = the same host, but `wss://` instead of `https://`
+    (secure WebSocket protocol, required since the backend is served over HTTPS)
