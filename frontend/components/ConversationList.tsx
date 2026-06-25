@@ -37,25 +37,25 @@ export default function ConversationList({
   });
 
   return (
-    <div className="w-[360px] bg-panel-sidebar border-r border-panel-border flex flex-col h-full">
+    <div className="w-full h-full bg-panel-sidebar dark:bg-zinc-900 border-r border-panel-border dark:border-zinc-700 flex flex-col">
       {/* Header */}
       <div className="px-4 pt-4 pb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Avatar src={currentUser.avatar_url} name={currentUser.display_name} size={36} />
-          <span className="font-semibold text-[15px]">Chats</span>
+          <span className="font-semibold text-[15px] dark:text-zinc-100">Chats</span>
         </div>
         <div className="flex items-center gap-1">
           <button
             onClick={onNewGroup}
             title="New group"
-            className="p-2 rounded-full hover:bg-panel-hover text-ink-muted"
+            className="p-2 rounded-full hover:bg-panel-hover dark:hover:bg-zinc-800 text-ink-muted dark:text-zinc-400"
           >
             <Users size={19} />
           </button>
           <button
             onClick={onNewChat}
             title="New chat"
-            className="p-2 rounded-full hover:bg-panel-hover text-ink-muted"
+            className="p-2 rounded-full hover:bg-panel-hover dark:hover:bg-zinc-800 text-ink-muted dark:text-zinc-400"
           >
             <SquarePen size={19} />
           </button>
@@ -64,13 +64,13 @@ export default function ConversationList({
 
       {/* Search */}
       <div className="px-3 pb-2">
-        <div className="flex items-center gap-2 bg-white border border-panel-border rounded-lg px-3 py-2">
-          <Search size={16} className="text-ink-faint" />
+        <div className="flex items-center gap-2 bg-white dark:bg-zinc-800 border border-panel-border dark:border-zinc-700 rounded-lg px-3 py-2">
+          <Search size={16} className="text-ink-faint dark:text-zinc-500" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search conversations"
-            className="bg-transparent outline-none text-sm flex-1"
+            className="bg-transparent outline-none text-sm flex-1 dark:text-zinc-100 placeholder:dark:text-zinc-500"
           />
         </div>
       </div>
@@ -78,7 +78,7 @@ export default function ConversationList({
       {/* List */}
       <div className="flex-1 overflow-y-auto">
         {filtered.length === 0 && (
-          <p className="text-center text-sm text-ink-faint mt-8">No conversations yet</p>
+          <p className="text-center text-sm text-ink-faint dark:text-zinc-500 mt-8">No conversations yet</p>
         )}
         {filtered.map((convo) => {
           const title = getConversationTitle(convo, currentUser.id);
@@ -93,11 +93,13 @@ export default function ConversationList({
               key={convo.id}
               onClick={() => onSelect(convo.id)}
               className={`w-full flex items-center gap-3 px-4 py-3 text-left transition ${
-                selectedId === convo.id ? "bg-signal-blue/10" : "hover:bg-panel-hover"
+                selectedId === convo.id
+                  ? "bg-signal-blue/10 dark:bg-signal-blue/20"
+                  : "hover:bg-panel-hover dark:hover:bg-zinc-800"
               }`}
             >
               {convo.is_group ? (
-                <div className="w-11 h-11 rounded-full bg-ink-faint/30 flex items-center justify-center text-ink-muted font-medium">
+                <div className="w-11 h-11 rounded-full bg-ink-faint/30 dark:bg-zinc-700 flex items-center justify-center text-ink-muted dark:text-zinc-300 font-medium">
                   {title.slice(0, 2).toUpperCase()}
                 </div>
               ) : (
@@ -106,15 +108,15 @@ export default function ConversationList({
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
-                  <span className="font-medium text-[14.5px] truncate">{title}</span>
+                  <span className="font-medium text-[14.5px] truncate dark:text-zinc-100">{title}</span>
                   {lastMsg && (
-                    <span className="text-xs text-ink-faint shrink-0 ml-2">
+                    <span className="text-xs text-ink-faint dark:text-zinc-500 shrink-0 ml-2">
                       {formatTime(lastMsg.created_at)}
                     </span>
                   )}
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-ink-muted truncate">
+                  <span className="text-sm text-ink-muted dark:text-zinc-400 truncate">
                     {lastMsg ? lastMsg.content : "No messages yet"}
                   </span>
                   {unread > 0 && (

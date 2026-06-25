@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Send, Info, MessageCircle } from "lucide-react";
+import { Send, Info, MessageCircle, ArrowLeft } from "lucide-react";
 import { Conversation, Message, User } from "../lib/types";
 import { getConversationTitle, getConversationAvatar, formatLastSeen } from "../lib/helpers";
 import Avatar from "./Avatar";
@@ -17,6 +17,7 @@ interface Props {
   onlineUserIds: Set<number>;
   onShowGroupInfo: () => void;
   onMessageInfo: (messageId: number) => void;
+  onBack?: () => void; // mobile only - returns to the conversation list
 }
 
 export default function ChatWindow({
@@ -29,9 +30,11 @@ export default function ChatWindow({
   onlineUserIds,
   onShowGroupInfo,
   onMessageInfo,
+  onBack,
 }: Props) {
   const [draft, setDraft] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -40,8 +43,8 @@ export default function ChatWindow({
 
   if (!conversation) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center bg-white text-ink-faint">
-        <div className="w-16 h-16 rounded-2xl bg-signal-blue/10 flex items-center justify-center mb-4">
+      <div className="hidden md:flex flex-1 flex-col items-center justify-center bg-white dark:bg-zinc-900 text-ink-faint dark:text-zinc-500">
+        <div className="w-16 h-16 rounded-2xl bg-signal-blue/10 dark:bg-signal-blue/20 flex items-center justify-center mb-4">
           <MessageCircle size={32} className="text-signal-blue" />
         </div>
         <p className="text-sm">Select a conversation to start messaging</p>
@@ -71,37 +74,47 @@ export default function ChatWindow({
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-white">
+    <div className="flex flex-col h-full w-full bg-white dark:bg-zinc-900">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-3 border-b border-panel-border">
-        <button
-          className="flex items-center gap-3"
-          onClick={conversation.is_group ? onShowGroupInfo : undefined}
-        >
-          {conversation.is_group ? (
-            <div className="w-10 h-10 rounded-full bg-ink-faint/30 flex items-center justify-center text-ink-muted font-medium">
-              {title.slice(0, 2).toUpperCase()}
-            </div>
-          ) : (
-            <Avatar src={avatarUrl} name={title} size={40} />
+      <div className="flex items-center justify-between px-3 md:px-5 py-3 border-b border-panel-border dark:border-zinc-700">
+        <div className="flex items-center gap-1 md:gap-3 min-w-0">
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="md:hidden p-2 -ml-1 rounded-full hover:bg-panel-hover dark:hover:bg-zinc-800 text-ink-muted dark:text-zinc-400 shrink-0"
+            >
+              <ArrowLeft size={20} />
+            </button>
           )}
-          <div className="text-left">
-            <p className="font-medium text-[15px]">{title}</p>
-            <p className="text-xs text-ink-muted">
-              {conversation.is_group
-                ? `${conversation.members.length} members`
-                : isOnline
-                ? "Online"
-                : otherMember
-                ? `Last seen ${formatLastSeen(otherMember.user.last_seen)}`
-                : ""}
-            </p>
-          </div>
-        </button>
+          <button
+            className="flex items-center gap-3 min-w-0"
+            onClick={conversation.is_group ? onShowGroupInfo : undefined}
+          >
+            {conversation.is_group ? (
+              <div className="w-10 h-10 rounded-full bg-ink-faint/30 dark:bg-zinc-700 flex items-center justify-center text-ink-muted dark:text-zinc-300 font-medium shrink-0">
+                {title.slice(0, 2).toUpperCase()}
+              </div>
+            ) : (
+              <Avatar src={avatarUrl} name={title} size={40} />
+            )}
+            <div className="text-left min-w-0">
+              <p className="font-medium text-[15px] truncate dark:text-zinc-100">{title}</p>
+              <p className="text-xs text-ink-muted dark:text-zinc-400">
+                {conversation.is_group
+                  ? `${conversation.members.length} members`
+                  : isOnline
+                  ? "Online"
+                  : otherMember
+                  ? `Last seen ${formatLastSeen(otherMember.user.last_seen)}`
+                  : ""}
+              </p>
+            </div>
+          </button>
+        </div>
         {conversation.is_group && (
           <button
             onClick={onShowGroupInfo}
-            className="p-2 rounded-full hover:bg-panel-hover text-ink-muted"
+            className="p-2 rounded-full hover:bg-panel-hover dark:hover:bg-zinc-800 text-ink-muted dark:text-zinc-400 shrink-0"
           >
             <Info size={19} />
           </button>
@@ -109,9 +122,9 @@ export default function ChatWindow({
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-5 py-4">
+      <div className="flex-1 overflow-y-auto px-3 md:px-5 py-4">
         {messages.length === 0 && (
-          <p className="text-center text-sm text-ink-faint mt-10">
+          <p className="text-center text-sm text-ink-faint dark:text-zinc-500 mt-10">
             No messages yet. Say hello! 👋
           </p>
         )}
@@ -133,13 +146,13 @@ export default function ChatWindow({
         })}
         {typingUserNames.length > 0 && (
           <div className="flex flex-col gap-1 mt-1">
-            <span className="text-xs text-ink-faint ml-1">
+            <span className="text-xs text-ink-faint dark:text-zinc-500 ml-1">
               {typingUserNames.join(", ")} {typingUserNames.length === 1 ? "is" : "are"} typing...
             </span>
-            <div className="bg-bubble-incoming rounded-bubble rounded-bl-md px-4 py-2.5 flex gap-1 w-fit">
-              <span className="w-1.5 h-1.5 bg-ink-faint rounded-full animate-bounce [animation-delay:-0.3s]" />
-              <span className="w-1.5 h-1.5 bg-ink-faint rounded-full animate-bounce [animation-delay:-0.15s]" />
-              <span className="w-1.5 h-1.5 bg-ink-faint rounded-full animate-bounce" />
+            <div className="bg-bubble-incoming dark:bg-zinc-700 rounded-bubble rounded-bl-md px-4 py-2.5 flex gap-1 w-fit">
+              <span className="w-1.5 h-1.5 bg-ink-faint dark:bg-zinc-400 rounded-full animate-bounce [animation-delay:-0.3s]" />
+              <span className="w-1.5 h-1.5 bg-ink-faint dark:bg-zinc-400 rounded-full animate-bounce [animation-delay:-0.15s]" />
+              <span className="w-1.5 h-1.5 bg-ink-faint dark:bg-zinc-400 rounded-full animate-bounce" />
             </div>
           </div>
         )}
@@ -147,12 +160,13 @@ export default function ChatWindow({
       </div>
 
       {/* Input */}
-      <form onSubmit={handleSubmit} className="flex items-center gap-2 px-4 py-3 border-t border-panel-border">
+      <form onSubmit={handleSubmit} className="flex items-center gap-2 px-3 md:px-4 py-3 border-t border-panel-border dark:border-zinc-700">
         <input
+          ref={inputRef}
           value={draft}
           onChange={(e) => handleChange(e.target.value)}
           placeholder="Type a message"
-          className="flex-1 bg-panel-sidebar rounded-full px-4 py-2.5 text-[14.5px] outline-none focus:ring-2 focus:ring-signal-blue/30"
+          className="flex-1 bg-panel-sidebar dark:bg-zinc-800 dark:text-zinc-100 rounded-full px-4 py-2.5 text-[14.5px] outline-none focus:ring-2 focus:ring-signal-blue/30 placeholder:dark:text-zinc-500"
         />
         <button
           type="submit"

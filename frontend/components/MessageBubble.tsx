@@ -26,13 +26,13 @@ export default function MessageBubble({
     <div className={`flex ${isMine ? "justify-end" : "justify-start"} mb-1.5`}>
       <div className={`max-w-[60%] ${isMine ? "items-end" : "items-start"} flex flex-col`}>
         {showSenderName && (
-          <span className="text-xs text-ink-muted ml-3 mb-0.5">{showSenderName}</span>
+          <span className="text-xs text-ink-muted dark:text-zinc-400 ml-3 mb-0.5">{showSenderName}</span>
         )}
         <div
           className={`rounded-bubble px-4 py-2 text-[14.5px] leading-relaxed ${
             isMine
               ? "bg-signal-blue text-white rounded-br-md"
-              : "bg-bubble-incoming text-ink rounded-bl-md"
+              : "bg-bubble-incoming dark:bg-zinc-700 text-ink dark:text-zinc-100 rounded-bl-md"
           }`}
         >
           <span className="whitespace-pre-wrap break-words">{message.content}</span>
@@ -40,7 +40,9 @@ export default function MessageBubble({
             onClick={isMine ? onInfoClick : undefined}
             title={isMine ? "Tap to see who's read this" : undefined}
             className={`inline-flex items-center gap-1 ml-2 text-[11px] ${
-              isMine ? "text-white/70 cursor-pointer hover:text-white" : "text-ink-faint"
+              isMine
+                ? "text-white/70 cursor-pointer hover:text-white"
+                : "text-ink-faint dark:text-zinc-400"
             } align-bottom`}
           >
             {formatTime(message.created_at)}

@@ -59,29 +59,29 @@ export default function GroupInfoModal({
 
   return (
     <Modal title={conversation.name || "Group info"} onClose={onClose}>
-      <p className="text-xs font-medium text-ink-muted mb-2">
+      <p className="text-xs font-medium text-ink-muted dark:text-zinc-400 mb-2">
         {conversation.members.length} members
       </p>
       <div className="space-y-1 max-h-56 overflow-y-auto mb-4">
         {conversation.members.map((m) => (
           <div
             key={m.user.id}
-            className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-panel-hover"
+            className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-panel-hover dark:hover:bg-zinc-700"
           >
             <Avatar src={m.user.avatar_url} name={m.user.display_name} size={36} />
             <div className="flex-1">
-              <p className="text-sm font-medium flex items-center gap-1.5">
+              <p className="text-sm font-medium flex items-center gap-1.5 dark:text-zinc-100">
                 {m.user.display_name}
                 {m.is_admin && <Shield size={13} className="text-signal-blue" />}
               </p>
-              <p className="text-xs text-ink-muted">@{m.user.username}</p>
+              <p className="text-xs text-ink-muted dark:text-zinc-400">@{m.user.username}</p>
             </div>
             {isAdmin && m.user.id !== currentUser.id && (
               <button
                 onClick={() => handleRemove(m.user.id)}
                 disabled={busy}
                 title="Remove member"
-                className="p-1.5 rounded-full hover:bg-red-50 text-red-500 disabled:opacity-50"
+                className="p-1.5 rounded-full hover:bg-red-50 dark:hover:bg-red-900/30 text-red-500 disabled:opacity-50"
               >
                 <UserMinus size={16} />
               </button>
@@ -92,13 +92,13 @@ export default function GroupInfoModal({
 
       {isAdmin && (
         <div>
-          <p className="text-xs font-medium text-ink-muted mb-2">Add a member</p>
+          <p className="text-xs font-medium text-ink-muted dark:text-zinc-400 mb-2">Add a member</p>
           <div className="flex gap-2">
             <input
               value={usernameToAdd}
               onChange={(e) => setUsernameToAdd(e.target.value)}
               placeholder="username"
-              className="flex-1 border border-panel-border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-signal-blue/30"
+              className="flex-1 border border-panel-border dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-signal-blue/30 placeholder:dark:text-zinc-500"
             />
             <button
               onClick={handleAdd}
@@ -113,7 +113,7 @@ export default function GroupInfoModal({
       )}
 
       {!isAdmin && (
-        <p className="text-xs text-ink-faint">Only group admins can add or remove members.</p>
+        <p className="text-xs text-ink-faint dark:text-zinc-500">Only group admins can add or remove members.</p>
       )}
 
       {error && <p className="text-sm text-red-500 mt-2">{error}</p>}

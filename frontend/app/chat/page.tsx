@@ -2,11 +2,12 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut, Settings } from "lucide-react";
+import { LogOut, Settings, Sun, Moon } from "lucide-react";
 import api from "../../lib/api";
 import { getSavedUser, getToken, clearSession } from "../../lib/auth";
 import { Conversation, Message, User } from "../../lib/types";
 import { useWebSocket } from "../../hooks/useWebSocket";
+import { useTheme } from "../../hooks/useTheme";
 import ConversationList from "../../components/ConversationList";
 import ChatWindow from "../../components/ChatWindow";
 import NewChatModal from "../../components/NewChatModal";
@@ -29,8 +30,25 @@ export default function ChatPage() {
   const [infoMessageId, setInfoMessageId] = useState<number | null>(null);
 
   const { onEvent, sendMessage, sendTyping, sendRead } = useWebSocket();
+  const { isDark, toggleTheme } = useTheme();
   const selectedIdRef = useRef<number | null>(null);
   selectedIdRef.current = selectedId;
+
+  // ---- Keyboard shortcut: Escape closes whichever modal is open, or
+  // (on mobile, where the sidebar and chat are separate screens) backs
+  // out of the open conversation to the conversation list. ----
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key !== "Escape") return;
+      if (showNewChat) return setShowNewChat(false);
+      if (showNewGroup) return setShowNewGroup(false);
+      if (showGroupInfo) return setShowGroupInfo(false);
+      if (infoMessageId !== null) return setInfoMessageId(null);
+      if (window.innerWidth < 768 && selectedId !== null) return setSelectedId(null);
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [showNewChat, showNewGroup, showGroupInfo, infoMessageId, selectedId]);
 
   // ---- Initial load: confirm auth, load user + conversations ----
   useEffect(() => {
@@ -178,8 +196,13 @@ export default function ChatPage() {
     : [];
 
   return (
-    <div className="h-screen flex">
-      <div className="flex flex-col">
+    <div className="h-screen flex overflow-hidden">
+      {/* Sidebar - full width on mobile when no chat open, fixed width on desktop always */}
+      <div
+        className={`${
+          selectedId !== null ? "hidden" : "flex"
+        } md:flex flex-col w-full md:w-[360px] shrink-0`}
+      >
         <ConversationList
           conversations={sortedConversations}
           currentUser={currentUser}
@@ -191,33 +214,47 @@ export default function ChatPage() {
           onNewChat={() => setShowNewChat(true)}
           onNewGroup={() => setShowNewGroup(true)}
         />
-        <div className="border-t border-panel-border bg-panel-sidebar px-4 py-2.5 flex items-center justify-between">
+        <div className="border-t border-panel-border dark:border-zinc-700 bg-panel-sidebar dark:bg-zinc-900 px-4 py-2.5 flex items-center justify-between">
           <button
-            className="text-xs text-ink-muted flex items-center gap-1.5 hover:text-ink"
+            className="text-xs text-ink-muted dark:text-zinc-400 flex items-center gap-1.5 hover:text-ink dark:hover:text-zinc-200"
             title="Settings (placeholder)"
           >
             <Settings size={14} /> Settings
           </button>
-          <button
-            onClick={handleLogout}
-            className="text-xs text-ink-muted flex items-center gap-1.5 hover:text-red-500"
-          >
-            <LogOut size={14} /> Logout
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={toggleTheme}
+              title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+              className="text-xs text-ink-muted dark:text-zinc-400 flex items-center gap-1.5 hover:text-ink dark:hover:text-zinc-200"
+            >
+              {isDark ? <Sun size={14} /> : <Moon size={14} />}
+            </button>
+            <button
+              onClick={handleLogout}
+              className="text-xs text-ink-muted dark:text-zinc-400 flex items-center gap-1.5 hover:text-red-500"
+            >
+              <LogOut size={14} /> Logout
+            </button>
+          </div>
         </div>
       </div>
 
-      <ChatWindow
-        conversation={selectedConvo}
-        currentUser={currentUser}
-        messages={selectedConvo ? messagesByConvo[selectedConvo.id] || [] : []}
-        onSend={handleSend}
-        onTyping={handleTyping}
-        typingUserNames={typingUserNames}
-        onlineUserIds={onlineUserIds}
-        onShowGroupInfo={() => setShowGroupInfo(true)}
-        onMessageInfo={(messageId) => setInfoMessageId(messageId)}
-      />
+      {/* Chat pane - full width on mobile when a chat IS open, flexible on desktop always */}
+      <div className={`${selectedId !== null ? "flex" : "hidden"} md:flex flex-1 min-w-0`}>
+        <ChatWindow
+          conversation={selectedConvo}
+          currentUser={currentUser}
+          messages={selectedConvo ? messagesByConvo[selectedConvo.id] || [] : []}
+          onSend={handleSend}
+          onTyping={handleTyping}
+          typingUserNames={typingUserNames}
+          onlineUserIds={onlineUserIds}
+          onShowGroupInfo={() => setShowGroupInfo(true)}
+          onMessageInfo={(messageId) => setInfoMessageId(messageId)}
+          onBack={() => setSelectedId(null)}
+        />
+      </div>
+
       {showNewChat && (
         <NewChatModal
           onClose={() => setShowNewChat(false)}
