@@ -31,6 +31,21 @@ delivery/read receipts, and a UI closely modeled on Signal's actual design.
 
 ---
 
+## Bonus Features Implemented
+
+- **Dark mode** — toggle via the moon/sun icon at the bottom of the sidebar,
+  persists across reloads via localStorage, applied across the entire app
+  (chat, modals, login/register screens).
+- **Responsive design** — on mobile-width screens, the sidebar and chat pane
+  are no longer shown side-by-side; selecting a conversation shows it
+  full-screen with a back arrow, matching how Signal's own mobile app works.
+- **Keyboard shortcuts** — `Esc` closes any open modal, or (on mobile) backs
+  out of an open conversation to the conversation list.
+- **Notifications/toasts** — a toast notification appears top-right when a
+  message arrives in a conversation you're not currently viewing.
+
+---
+
 ## Tech Stack
 
 | Layer | Technology |
@@ -259,9 +274,11 @@ typing indicators, and read receipts live.
 - **One WebSocket connection per session**, not per conversation — this
   keeps the architecture simpler and is how most production chat apps
   (Slack, Discord, WhatsApp Web) actually work.
-- **Voice/video calls, Stories, and Linked Devices** are out of scope and
-  not stubbed as separate pages, since they don't affect core messaging
-  evaluation criteria; happy to add "Coming Soon" placeholders if needed.
+- **Voice/video calls, Stories, and Linked Devices** each have a real,
+  clickable entry point in the UI (a phone icon in the chat header, a
+  circle icon in the sidebar header, and a row inside Settings,
+  respectively) that opens a "Coming Soon" modal, rather than being
+  silently absent from the app.
 - **Group "last seen"/online status** is shown per-member inside Group Info
   rather than as a single aggregate status, since a group doesn't have one
   online/offline state.
