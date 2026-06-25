@@ -15,6 +15,7 @@ import NewGroupModal from "../../components/NewGroupModal";
 import GroupInfoModal from "../../components/GroupInfoModal";
 import MessageInfoModal from "../../components/MessageInfoModal";
 import Modal from "../../components/Modal";
+import ToastStack, { ToastItem } from "../../components/ToastStack";
 
 export default function ChatPage() {
   const router = useRouter();
@@ -30,6 +31,7 @@ export default function ChatPage() {
   const [showGroupInfo, setShowGroupInfo] = useState(false);
   const [infoMessageId, setInfoMessageId] = useState<number | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
 
   const { onEvent, sendMessage, sendTyping, sendRead } = useWebSocket();
   const { isDark, toggleTheme } = useTheme();
@@ -101,6 +103,25 @@ export default function ChatPage() {
             ...prev,
             [msg.conversation_id]: (prev[msg.conversation_id] || 0) + 1,
           }));
+
+          // Show a toast notification since this message is arriving in a
+          // conversation the user isn't currently looking at - satisfies
+          // the "Notifications / toasts" item from the Signal Experience list.
+          setConversations((currentConvos) => {
+            const convo = currentConvos.find((c) => c.id === msg.conversation_id);
+            const sender = convo?.members.find((m) => m.user.id === msg.sender_id);
+            const title = convo
+              ? convo.is_group
+                ? `${sender?.user.display_name || "Someone"} in ${convo.name}`
+                : sender?.user.display_name || "New message"
+              : "New message";
+            const toastId = Date.now();
+            setToasts((prev) => [...prev, { id: toastId, title, body: msg.content }]);
+            setTimeout(() => {
+              setToasts((prev) => prev.filter((t) => t.id !== toastId));
+            }, 4000);
+            return currentConvos;
+          });
         } else if (msg.conversation_id === selectedIdRef.current) {
           // I'm looking at this chat right now - tell the server I read it instantly
           sendRead(msg.conversation_id);
@@ -200,6 +221,10 @@ export default function ChatPage() {
 
   return (
     <div className="h-screen flex overflow-hidden">
+      <ToastStack
+        toasts={toasts}
+        onDismiss={(id) => setToasts((prev) => prev.filter((t) => t.id !== id))}
+      />
       {/* Sidebar - full width on mobile when no chat open, fixed width on desktop always */}
       <div
         className={`${
@@ -291,11 +316,24 @@ export default function ChatPage() {
       )}
       {showSettings && (
         <Modal title="Settings" onClose={() => setShowSettings(false)}>
-          <p className="text-sm text-ink-muted dark:text-zinc-400">
-            Privacy, notifications, and appearance settings are coming soon.
-            In the meantime, you can already toggle dark mode using the
-            icon next to this button.
-          </p>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between py-2">
+              <span className="text-sm dark:text-zinc-200">Privacy</span>
+              <span className="text-xs text-ink-faint dark:text-zinc-500">Coming soon</span>
+            </div>
+            <div className="flex items-center justify-between py-2 border-t border-panel-border dark:border-zinc-700">
+              <span className="text-sm dark:text-zinc-200">Notifications</span>
+              <span className="text-xs text-ink-faint dark:text-zinc-500">Coming soon</span>
+            </div>
+            <div className="flex items-center justify-between py-2 border-t border-panel-border dark:border-zinc-700">
+              <span className="text-sm dark:text-zinc-200">Appearance (dark mode)</span>
+              <span className="text-xs text-signal-blue font-medium">{isDark ? "Dark" : "Light"} mode active</span>
+            </div>
+            <div className="flex items-center justify-between py-2 border-t border-panel-border dark:border-zinc-700">
+              <span className="text-sm dark:text-zinc-200">Linked devices</span>
+              <span className="text-xs text-ink-faint dark:text-zinc-500">Coming soon</span>
+            </div>
+          </div>
         </Modal>
       )}
     </div>

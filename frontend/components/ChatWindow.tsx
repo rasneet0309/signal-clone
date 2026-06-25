@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Send, Info, MessageCircle, ArrowLeft } from "lucide-react";
+import { Send, Info, MessageCircle, ArrowLeft, Phone } from "lucide-react";
 import { Conversation, Message, User } from "../lib/types";
 import { getConversationTitle, getConversationAvatar, formatLastSeen } from "../lib/helpers";
 import Avatar from "./Avatar";
 import MessageBubble from "./MessageBubble";
+import Modal from "./Modal";
 
 interface Props {
   conversation: Conversation | null;
@@ -33,6 +34,7 @@ export default function ChatWindow({
   onBack,
 }: Props) {
   const [draft, setDraft] = useState("");
+  const [showCallSoon, setShowCallSoon] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -111,14 +113,23 @@ export default function ChatWindow({
             </div>
           </button>
         </div>
-        {conversation.is_group && (
+        <div className="flex items-center gap-1">
           <button
-            onClick={onShowGroupInfo}
+            onClick={() => setShowCallSoon(true)}
+            title="Voice/video call (coming soon)"
             className="p-2 rounded-full hover:bg-panel-hover dark:hover:bg-zinc-800 text-ink-muted dark:text-zinc-400 shrink-0"
           >
-            <Info size={19} />
+            <Phone size={19} />
           </button>
-        )}
+          {conversation.is_group && (
+            <button
+              onClick={onShowGroupInfo}
+              className="p-2 rounded-full hover:bg-panel-hover dark:hover:bg-zinc-800 text-ink-muted dark:text-zinc-400 shrink-0"
+            >
+              <Info size={19} />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Messages */}
@@ -176,6 +187,15 @@ export default function ChatWindow({
           <Send size={17} />
         </button>
       </form>
+
+      {showCallSoon && (
+        <Modal title="Voice & video calls" onClose={() => setShowCallSoon(false)}>
+          <p className="text-sm text-ink-muted dark:text-zinc-400">
+            Voice and video calling are coming soon. For now, you can stay in
+            touch with {title} right here in chat.
+          </p>
+        </Modal>
+      )}
     </div>
   );
 }

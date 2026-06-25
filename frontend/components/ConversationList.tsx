@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Search, SquarePen, Users } from "lucide-react";
+import { Search, SquarePen, Users, CirclePlay } from "lucide-react";
 import { Conversation, User, Message } from "../lib/types";
 import { getConversationTitle, getConversationAvatar, formatTime } from "../lib/helpers";
 import Avatar from "./Avatar";
+import Modal from "./Modal";
 
 interface Props {
   conversations: Conversation[];
@@ -30,6 +31,7 @@ export default function ConversationList({
   onNewGroup,
 }: Props) {
   const [search, setSearch] = useState("");
+  const [showStoriesSoon, setShowStoriesSoon] = useState(false);
 
   const filtered = conversations.filter((c) => {
     const title = getConversationTitle(c, currentUser.id).toLowerCase();
@@ -45,6 +47,13 @@ export default function ConversationList({
           <span className="font-semibold text-[15px] dark:text-zinc-100">Chats</span>
         </div>
         <div className="flex items-center gap-1">
+          <button
+            onClick={() => setShowStoriesSoon(true)}
+            title="Stories"
+            className="p-2 rounded-full hover:bg-panel-hover dark:hover:bg-zinc-800 text-ink-muted dark:text-zinc-400"
+          >
+            <CirclePlay size={19} />
+          </button>
           <button
             onClick={onNewGroup}
             title="New group"
@@ -130,6 +139,15 @@ export default function ConversationList({
           );
         })}
       </div>
+
+      {showStoriesSoon && (
+        <Modal title="Stories" onClose={() => setShowStoriesSoon(false)}>
+          <p className="text-sm text-ink-muted dark:text-zinc-400">
+            Stories are coming soon - share photos and updates that
+            disappear after 24 hours, visible to your contacts.
+          </p>
+        </Modal>
+      )}
     </div>
   );
 }
