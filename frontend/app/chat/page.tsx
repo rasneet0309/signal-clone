@@ -14,6 +14,7 @@ import NewChatModal from "../../components/NewChatModal";
 import NewGroupModal from "../../components/NewGroupModal";
 import GroupInfoModal from "../../components/GroupInfoModal";
 import MessageInfoModal from "../../components/MessageInfoModal";
+import Modal from "../../components/Modal";
 
 export default function ChatPage() {
   const router = useRouter();
@@ -28,6 +29,7 @@ export default function ChatPage() {
   const [showNewGroup, setShowNewGroup] = useState(false);
   const [showGroupInfo, setShowGroupInfo] = useState(false);
   const [infoMessageId, setInfoMessageId] = useState<number | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
 
   const { onEvent, sendMessage, sendTyping, sendRead } = useWebSocket();
   const { isDark, toggleTheme } = useTheme();
@@ -44,11 +46,12 @@ export default function ChatPage() {
       if (showNewGroup) return setShowNewGroup(false);
       if (showGroupInfo) return setShowGroupInfo(false);
       if (infoMessageId !== null) return setInfoMessageId(null);
+      if (showSettings) return setShowSettings(false);
       if (window.innerWidth < 768 && selectedId !== null) return setSelectedId(null);
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [showNewChat, showNewGroup, showGroupInfo, infoMessageId, selectedId]);
+  }, [showNewChat, showNewGroup, showGroupInfo, infoMessageId, showSettings, selectedId]);
 
   // ---- Initial load: confirm auth, load user + conversations ----
   useEffect(() => {
@@ -216,8 +219,9 @@ export default function ChatPage() {
         />
         <div className="border-t border-panel-border dark:border-zinc-700 bg-panel-sidebar dark:bg-zinc-900 px-4 py-2.5 flex items-center justify-between">
           <button
+            onClick={() => setShowSettings(true)}
             className="text-xs text-ink-muted dark:text-zinc-400 flex items-center gap-1.5 hover:text-ink dark:hover:text-zinc-200"
-            title="Settings (placeholder)"
+            title="Settings"
           >
             <Settings size={14} /> Settings
           </button>
@@ -284,6 +288,15 @@ export default function ChatPage() {
           messageId={infoMessageId}
           onClose={() => setInfoMessageId(null)}
         />
+      )}
+      {showSettings && (
+        <Modal title="Settings" onClose={() => setShowSettings(false)}>
+          <p className="text-sm text-ink-muted dark:text-zinc-400">
+            Privacy, notifications, and appearance settings are coming soon.
+            In the meantime, you can already toggle dark mode using the
+            icon next to this button.
+          </p>
+        </Modal>
       )}
     </div>
   );
