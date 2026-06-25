@@ -6,13 +6,24 @@ and wires up all our routers (auth, contacts, conversations, messages, websocket
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .database import engine, Base
+from .database import engine, Base, SessionLocal
 from . import models  # noqa - needed so SQLAlchemy knows about our tables
 from .routers import auth_routes, contacts_routes, conversations_routes, messages_routes
 from . import websocket as websocket_module
+from .seed import run_seed
 
 # This line actually creates signal.db and all 5 tables, if they don't exist yet
 Base.metadata.create_all(bind=engine)
+
+# Auto-seed demo data if the database is completely empty. This matters on
+# free-tier hosting (e.g. Render's free plan) where the disk is wiped on
+# every restart - this way the app always has demo data ready to go,
+# without needing shell access to manually re-run the seed script.
+_db = SessionLocal()
+if _db.query(models.User).count() == 0:
+    print("Database is empty - running initial seed...")
+    run_seed()
+_db.close()
 
 app = FastAPI(title="Signal Clone API")
 
