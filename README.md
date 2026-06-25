@@ -43,6 +43,9 @@ delivery/read receipts, and a UI closely modeled on Signal's actual design.
   out of an open conversation to the conversation list.
 - **Notifications/toasts** — a toast notification appears top-right when a
   message arrives in a conversation you're not currently viewing.
+- **Reply-to/quoted messages** — hover any message to reveal a reply icon;
+  the composer shows a preview of what you're replying to, and the sent
+  message displays the quoted snippet inline, in both 1:1 and group chats.
 
 ---
 
@@ -160,7 +163,8 @@ messages
 ├── conversation_id (FK -> conversations.id)
 ├── sender_id (FK -> users.id)
 ├── content (text)
-└── created_at
+├── created_at
+└── reply_to_id (FK -> messages.id, nullable - self-referencing, for quoted replies)
 
 message_status                <- per-recipient delivery/read tracking
 ├── id (PK)
@@ -202,7 +206,7 @@ to Carol." This table gives one row per (message, recipient) pair.
 Single persistent connection per logged-in user.
 
 **Client → Server events:**
-- `{"type": "message", "conversation_id": 3, "content": "hey"}`
+- `{"type": "message", "conversation_id": 3, "content": "hey", "reply_to_id": 12}` (reply_to_id is optional)
 - `{"type": "typing", "conversation_id": 3, "is_typing": true}`
 - `{"type": "read", "conversation_id": 3}`
 

@@ -81,6 +81,19 @@ class ConversationOut(BaseModel):
 class MessageCreate(BaseModel):
     conversation_id: int
     content: str
+    reply_to_id: Optional[int] = None
+
+
+class ReplyPreview(BaseModel):
+    """A lightweight snapshot of the message being replied to - just
+    enough to render a quoted snippet, without needing a second API call."""
+    id: int
+    sender_id: int
+    sender_name: str
+    content: str
+
+    class Config:
+        from_attributes = True
 
 
 class MessageOut(BaseModel):
@@ -89,10 +102,12 @@ class MessageOut(BaseModel):
     sender_id: int
     content: str
     created_at: datetime
+    reply_to: Optional[ReplyPreview] = None
 
     class Config:
         from_attributes = True
-    
+
+
 class MessageStatusOut(BaseModel):
     user: UserOut
     status: str

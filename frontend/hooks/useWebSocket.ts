@@ -61,8 +61,8 @@ export function useWebSocket() {
   }, []);
 
   const sendMessage = useCallback(
-    (conversation_id: number, content: string) => {
-      send({ type: "message", conversation_id, content });
+    (conversation_id: number, content: string, reply_to_id?: number) => {
+      send({ type: "message", conversation_id, content, reply_to_id });
     },
     [send]
   );

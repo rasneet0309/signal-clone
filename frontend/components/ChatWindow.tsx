@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Send, Info, MessageCircle, ArrowLeft, Phone } from "lucide-react";
+import { Send, Info, MessageCircle, ArrowLeft, Phone, X } from "lucide-react";
 import { Conversation, Message, User } from "../lib/types";
 import { getConversationTitle, getConversationAvatar, formatLastSeen } from "../lib/helpers";
 import Avatar from "./Avatar";
@@ -12,7 +12,7 @@ interface Props {
   conversation: Conversation | null;
   currentUser: User;
   messages: Message[];
-  onSend: (content: string) => void;
+  onSend: (content: string, replyToId?: number) => void;
   onTyping: (isTyping: boolean) => void;
   typingUserNames: string[];
   onlineUserIds: Set<number>;
@@ -35,6 +35,7 @@ export default function ChatWindow({
 }: Props) {
   const [draft, setDraft] = useState("");
   const [showCallSoon, setShowCallSoon] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -42,6 +43,11 @@ export default function ChatWindow({
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length, typingUserNames.length]);
+
+  // Clear any pending reply if the conversation itself changes
+  useEffect(() => {
+    setReplyingTo(null);
+  }, [conversation?.id]);
 
   if (!conversation) {
     return (
@@ -70,9 +76,15 @@ export default function ChatWindow({
     e.preventDefault();
     const trimmed = draft.trim();
     if (!trimmed) return;
-    onSend(trimmed);
+    onSend(trimmed, replyingTo?.id);
     setDraft("");
+    setReplyingTo(null);
     onTyping(false);
+  }
+
+  function getSenderName(msg: Message) {
+    if (msg.sender_id === currentUser.id) return "You";
+    return conversation?.members.find((m) => m.user.id === msg.sender_id)?.user.display_name || "Unknown";
   }
 
   return (
@@ -152,6 +164,10 @@ export default function ChatWindow({
               isMine={msg.sender_id === currentUser.id}
               showSenderName={showSenderName}
               onInfoClick={() => onMessageInfo(msg.id)}
+              onReplyClick={() => {
+                setReplyingTo(msg);
+                inputRef.current?.focus();
+              }}
             />
           );
         })}
@@ -169,6 +185,24 @@ export default function ChatWindow({
         )}
         <div ref={bottomRef} />
       </div>
+
+      {/* Reply preview bar */}
+      {replyingTo && (
+        <div className="flex items-center justify-between gap-2 px-3 md:px-4 py-2 bg-panel-sidebar dark:bg-zinc-800 border-t border-panel-border dark:border-zinc-700">
+          <div className="flex-1 min-w-0 pl-2.5 border-l-2 border-signal-blue">
+            <p className="text-xs font-medium text-signal-blue">
+              Replying to {getSenderName(replyingTo)}
+            </p>
+            <p className="text-xs text-ink-muted dark:text-zinc-400 truncate">{replyingTo.content}</p>
+          </div>
+          <button
+            onClick={() => setReplyingTo(null)}
+            className="p-1.5 rounded-full hover:bg-panel-hover dark:hover:bg-zinc-700 text-ink-muted dark:text-zinc-400 shrink-0"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      )}
 
       {/* Input */}
       <form onSubmit={handleSubmit} className="flex items-center gap-2 px-3 md:px-4 py-3 border-t border-panel-border dark:border-zinc-700">

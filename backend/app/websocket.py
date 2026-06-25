@@ -151,6 +151,7 @@ async def websocket_endpoint(websocket: WebSocket, token: str = Query(...)):
 async def _handle_new_message(db: Session, user: models.User, data: dict):
     conversation_id = data.get("conversation_id")
     content = data.get("content", "").strip()
+    reply_to_id = data.get("reply_to_id")
     if not content:
         return
 
@@ -158,8 +159,19 @@ async def _handle_new_message(db: Session, user: models.User, data: dict):
     if user.id not in member_ids:
         return  # not authorized to post in this conversation
 
+    # If a reply_to_id was given, make sure it's actually a message in THIS
+    # conversation - otherwise silently ignore it rather than trusting the client.
+    reply_to_msg = None
+    if reply_to_id:
+        candidate = db.query(models.Message).filter(models.Message.id == reply_to_id).first()
+        if candidate and candidate.conversation_id == conversation_id:
+            reply_to_msg = candidate
+
     msg = models.Message(
-        conversation_id=conversation_id, sender_id=user.id, content=content
+        conversation_id=conversation_id,
+        sender_id=user.id,
+        content=content,
+        reply_to_id=reply_to_msg.id if reply_to_msg else None,
     )
     db.add(msg)
     db.commit()
@@ -176,6 +188,15 @@ async def _handle_new_message(db: Session, user: models.User, data: dict):
         ))
     db.commit()
 
+    reply_to_payload = None
+    if reply_to_msg:
+        reply_to_payload = {
+            "id": reply_to_msg.id,
+            "sender_id": reply_to_msg.sender_id,
+            "sender_name": reply_to_msg.sender.display_name,
+            "content": reply_to_msg.content,
+        }
+
     payload = {
         "type": "new_message",
         "message": {
@@ -184,6 +205,7 @@ async def _handle_new_message(db: Session, user: models.User, data: dict):
             "sender_id": msg.sender_id,
             "content": msg.content,
             "created_at": msg.created_at.isoformat(),
+            "reply_to": reply_to_payload,
         },
     }
     # Send to everyone in the conversation, including the sender

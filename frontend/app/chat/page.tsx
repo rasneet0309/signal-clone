@@ -169,9 +169,9 @@ export default function ChatPage() {
   }, [onEvent, currentUser, sendRead]);
 
   const handleSend = useCallback(
-    (content: string) => {
+    (content: string, replyToId?: number) => {
       if (selectedId === null || !currentUser) return;
-      sendMessage(selectedId, content);
+      sendMessage(selectedId, content, replyToId);
     },
     [selectedId, currentUser, sendMessage]
   );

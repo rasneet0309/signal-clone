@@ -65,10 +65,12 @@ class Message(Base):
     sender_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     content = Column(Text, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+    reply_to_id = Column(Integer, ForeignKey("messages.id"), nullable=True)
 
     conversation = relationship("Conversation", back_populates="messages")
     sender = relationship("User")
     statuses = relationship("MessageStatus", back_populates="message")
+    reply_to = relationship("Message", remote_side=[id])
 
 
 class MessageStatus(Base):

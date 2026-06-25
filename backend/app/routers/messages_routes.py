@@ -28,12 +28,34 @@ def get_messages(
     if not membership:
         raise HTTPException(status_code=404, detail="Conversation not found")
 
-    return (
+    messages = (
         db.query(models.Message)
         .filter(models.Message.conversation_id == conversation_id)
         .order_by(models.Message.created_at.asc())
         .all()
     )
+
+    # Build the response manually so we can attach a lightweight
+    # "reply_to" preview (sender name + snippet) without extra round trips.
+    result = []
+    for msg in messages:
+        reply_preview = None
+        if msg.reply_to_id and msg.reply_to:
+            reply_preview = schemas.ReplyPreview(
+                id=msg.reply_to.id,
+                sender_id=msg.reply_to.sender_id,
+                sender_name=msg.reply_to.sender.display_name,
+                content=msg.reply_to.content,
+            )
+        result.append(schemas.MessageOut(
+            id=msg.id,
+            conversation_id=msg.conversation_id,
+            sender_id=msg.sender_id,
+            content=msg.content,
+            created_at=msg.created_at,
+            reply_to=reply_preview,
+        ))
+    return result
 
 
 @router.post("/{conversation_id}/read")
@@ -62,6 +84,7 @@ def mark_read(
             ))
     db.commit()
     return {"ok": True, "marked": len(messages)}
+
 
 @router.get("/info/{message_id}", response_model=list[schemas.MessageStatusOut])
 def get_message_info(

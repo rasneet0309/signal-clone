@@ -22,12 +22,20 @@ export interface Conversation {
   members: ConversationMember[];
 }
 
+export interface ReplyPreview {
+  id: number;
+  sender_id: number;
+  sender_name: string;
+  content: string;
+}
+
 export interface Message {
   id: number;
   conversation_id: number;
   sender_id: number;
   content: string;
   created_at: string;
+  reply_to?: ReplyPreview | null;
   // these two are tracked client-side / via websocket events, not stored on the message itself
   status?: "sending" | "sent" | "delivered" | "read";
 }
