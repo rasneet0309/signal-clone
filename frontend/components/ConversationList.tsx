@@ -1,0 +1,133 @@
+"use client";
+
+import { useState } from "react";
+import { Search, SquarePen, Users } from "lucide-react";
+import { Conversation, User, Message } from "../lib/types";
+import { getConversationTitle, getConversationAvatar, formatTime } from "../lib/helpers";
+import Avatar from "./Avatar";
+
+interface Props {
+  conversations: Conversation[];
+  currentUser: User;
+  selectedId: number | null;
+  onSelect: (id: number) => void;
+  lastMessages: Record<number, Message | undefined>;
+  unreadCounts: Record<number, number>;
+  onlineUserIds: Set<number>;
+  onNewChat: () => void;
+  onNewGroup: () => void;
+}
+
+export default function ConversationList({
+  conversations,
+  currentUser,
+  selectedId,
+  onSelect,
+  lastMessages,
+  unreadCounts,
+  onlineUserIds,
+  onNewChat,
+  onNewGroup,
+}: Props) {
+  const [search, setSearch] = useState("");
+
+  const filtered = conversations.filter((c) => {
+    const title = getConversationTitle(c, currentUser.id).toLowerCase();
+    return title.includes(search.toLowerCase());
+  });
+
+  return (
+    <div className="w-[360px] bg-panel-sidebar border-r border-panel-border flex flex-col h-full">
+      {/* Header */}
+      <div className="px-4 pt-4 pb-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Avatar src={currentUser.avatar_url} name={currentUser.display_name} size={36} />
+          <span className="font-semibold text-[15px]">Chats</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={onNewGroup}
+            title="New group"
+            className="p-2 rounded-full hover:bg-panel-hover text-ink-muted"
+          >
+            <Users size={19} />
+          </button>
+          <button
+            onClick={onNewChat}
+            title="New chat"
+            className="p-2 rounded-full hover:bg-panel-hover text-ink-muted"
+          >
+            <SquarePen size={19} />
+          </button>
+        </div>
+      </div>
+
+      {/* Search */}
+      <div className="px-3 pb-2">
+        <div className="flex items-center gap-2 bg-white border border-panel-border rounded-lg px-3 py-2">
+          <Search size={16} className="text-ink-faint" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search conversations"
+            className="bg-transparent outline-none text-sm flex-1"
+          />
+        </div>
+      </div>
+
+      {/* List */}
+      <div className="flex-1 overflow-y-auto">
+        {filtered.length === 0 && (
+          <p className="text-center text-sm text-ink-faint mt-8">No conversations yet</p>
+        )}
+        {filtered.map((convo) => {
+          const title = getConversationTitle(convo, currentUser.id);
+          const avatarUrl = getConversationAvatar(convo, currentUser.id);
+          const lastMsg = lastMessages[convo.id];
+          const unread = unreadCounts[convo.id] || 0;
+          const otherMember = convo.members.find((m) => m.user.id !== currentUser.id);
+          const isOnline = otherMember ? onlineUserIds.has(otherMember.user.id) : false;
+
+          return (
+            <button
+              key={convo.id}
+              onClick={() => onSelect(convo.id)}
+              className={`w-full flex items-center gap-3 px-4 py-3 text-left transition ${
+                selectedId === convo.id ? "bg-signal-blue/10" : "hover:bg-panel-hover"
+              }`}
+            >
+              {convo.is_group ? (
+                <div className="w-11 h-11 rounded-full bg-ink-faint/30 flex items-center justify-center text-ink-muted font-medium">
+                  {title.slice(0, 2).toUpperCase()}
+                </div>
+              ) : (
+                <Avatar src={avatarUrl} name={title} size={44} online={isOnline} />
+              )}
+
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-[14.5px] truncate">{title}</span>
+                  {lastMsg && (
+                    <span className="text-xs text-ink-faint shrink-0 ml-2">
+                      {formatTime(lastMsg.created_at)}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-ink-muted truncate">
+                    {lastMsg ? lastMsg.content : "No messages yet"}
+                  </span>
+                  {unread > 0 && (
+                    <span className="ml-2 shrink-0 bg-signal-blue text-white text-[11px] font-medium rounded-full min-w-[20px] h-5 flex items-center justify-center px-1.5">
+                      {unread}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
